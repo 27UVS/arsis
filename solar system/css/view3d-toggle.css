@@ -1,0 +1,112 @@
+.view3d-panel {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-dim);
+}
+
+.view3d-toggle {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 2px;
+  border: 1px solid var(--line-dim);
+  background: rgba(0, 18, 20, 0.55);
+  cursor: pointer;
+  color: var(--bright);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.view3d-toggle:hover:not(:disabled) {
+  border-color: var(--line);
+  box-shadow: 0 0 14px rgba(120, 220, 200, 0.14);
+}
+
+.view3d-toggle:focus-visible {
+  outline: 1px solid var(--bright);
+  outline-offset: 2px;
+}
+
+.view3d-toggle:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.view3d-toggle--on:not(:disabled) {
+  border-color: rgba(160, 235, 228, 0.45);
+  box-shadow: 0 0 12px rgba(120, 220, 200, 0.18);
+}
+
+.view3d-toggle__icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.view3d-toggle__disc {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(200, 255, 245, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(0, 20, 22, 0.4);
+  opacity: 1;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.view3d-toggle__globe {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.82);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.view3d-toggle__globe-shade {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 32% 28%,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(160, 235, 228, 0.55) 42%,
+    rgba(0, 28, 30, 0.55) 100%
+  );
+  border: 1px solid rgba(140, 230, 220, 0.35);
+}
+
+.view3d-toggle__globe-ring {
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1px solid rgba(200, 255, 245, 0.45);
+  clip-path: ellipse(55% 38% at 50% 50%);
+  transform: rotate(-28deg);
+  opacity: 0.85;
+}
+
+.view3d-toggle--on .view3d-toggle__disc {
+  opacity: 0;
+  transform: scale(0.75);
+}
+
+.view3d-toggle--on .view3d-toggle__globe {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.view3d-toggle:not(.view3d-toggle--on) .view3d-toggle__disc {
+  transform: scale(1);
+}

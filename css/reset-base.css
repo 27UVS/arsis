@@ -1,0 +1,21 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--void);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 17px;
+  letter-spacing: 0.04em;
+}
+
+body {
+  min-height: 100dvh;
+  overflow: hidden;
+}

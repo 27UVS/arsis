@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="../assets/flavicon.ico" type="image/x-icon" />
+  <title data-i18n="doc_title">ARSIS — гелиоцентрическая модель</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=VT323&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <svg class="crt-filters" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="crt-grain" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" seed="42" result="noise" />
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.35  0 0 0 0 0.55  0 0 0 0 0.52  0 0 0 0.22 0" result="tinted" />
+        <feComposite in="tinted" in2="SourceGraphic" operator="over" />
+      </filter>
+    </defs>
+  </svg>
+
+  <div id="app-glitch-stage" class="app-glitch-stage">
+    <div class="crt-root">
+      <div class="crt-scanlines" aria-hidden="true"></div>
+      <div class="crt-pixel-grid" aria-hidden="true"></div>
+
+      <div class="shell" data-i18n-aria="aria_shell">
+      <header class="top-bar">
+        <div class="brand">
+          <span class="brand__mark">ARSIS</span>
+          <span class="brand__sub" data-i18n="brand_sub">ORBITAL / SURVEILLANCE</span>
+        </div>
+        <div class="top-bar__meta">
+          <span class="pill" data-i18n="pill_log">LOGARITHMIC VIEW</span>
+          <span class="pill" data-i18n="pill_scale">NOT TO SCALE</span>
+          <span class="pill" id="clock">UTC —</span>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="panel panel--left">
+          <h2 class="panel__title" data-i18n="panel_registry">OBJECT REGISTRY</h2>
+          <ul class="registry" id="registry"></ul>
+          <div class="panel__block">
+            <div class="label" data-i18n="lbl_epoch">EPOCH</div>
+            <div class="mono" id="epoch-readout">J2000.0</div>
+          </div>
+          <div class="panel__block">
+            <div class="label" data-i18n="lbl_delta">Δt FROM EPOCH</div>
+            <div class="mono" id="delta-readout">—</div>
+          </div>
+          <div class="panel__block panel__block--labels">
+            <div class="label" data-i18n="lbl_chart_labels">CHART LABELS</div>
+            <div class="label-toggle-row">
+              <button
+                type="button"
+                id="toggle-planet-names"
+                class="chip-toggle"
+                aria-pressed="true"
+                data-i18n="toggle_planet_names"
+                data-i18n-aria="aria_toggle_planet_names"
+              >
+                PLANETS
+              </button>
+              <button
+                type="button"
+                id="toggle-moon-names"
+                class="chip-toggle"
+                aria-pressed="true"
+                data-i18n="toggle_moon_names"
+                data-i18n-aria="aria_toggle_moon_names"
+              >
+                MOONS
+              </button>
+            </div>
+          </div>
+          <div class="scale-panel">
+            <div class="label" data-i18n="scale_panel_title">ORBIT SCALE</div>
+            <button
+              type="button"
+              id="scale-toggle"
+              class="segment-toggle"
+              aria-pressed="false"
+              data-i18n-aria="aria_scale_toggle"
+            >
+              <span class="segment-toggle__track" aria-hidden="true">
+                <span class="segment-toggle__fill"></span>
+              </span>
+              <span class="segment-toggle__caps">
+                <span class="segment-toggle__cap segment-toggle__cap--a" data-i18n="scale_cap_simple">A</span>
+                <span class="segment-toggle__cap segment-toggle__cap--b" data-i18n="scale_cap_real">B</span>
+              </span>
+            </button>
+            <p class="scale-panel__hint mono small" id="scale-hint" data-i18n="scale_hint_simple"></p>
+          </div>
+          <div class="view3d-panel">
+            <button
+              type="button"
+              id="view-3d-toggle"
+              class="view3d-toggle"
+              aria-pressed="false"
+              disabled
+              aria-label=""
+              title=""
+            >
+              <span class="view3d-toggle__icon" aria-hidden="true">
+                <span class="view3d-toggle__disc"></span>
+                <span class="view3d-toggle__globe">
+                  <span class="view3d-toggle__globe-shade"></span>
+                  <span class="view3d-toggle__globe-ring"></span>
+                </span>
+              </span>
+            </button>
+          </div>
+          <div class="time-panel" id="time-panel">
+            <h2 class="panel__title" data-i18n="time_panel_title">TIME DRIVE</h2>
+            <div class="label" data-i18n="time_lbl_sim">SIM UTC</div>
+            <div class="mono time-panel__clock" id="sim-clock">—</div>
+            <div class="label" data-i18n="time_lbl_rate">RATE (sim / real)</div>
+            <div class="mono small time-panel__rate" id="time-rate-readout">1×</div>
+            <div class="time-panel__row">
+              <button type="button" class="time-btn time-btn--wide" id="time-reset" data-i18n="time_reset">RESET</button>
+            </div>
+            <div class="time-panel__row time-panel__row--pair">
+              <button type="button" class="time-btn" id="time-slower" data-i18n="time_slower" title="">−</button>
+              <button type="button" class="time-btn" id="time-faster" data-i18n="time_faster" title="">+</button>
+            </div>
+            <div class="label time-panel__shift-label" data-i18n="time_lbl_shift">ΔT SHIFT</div>
+            <div class="time-panel__grid">
+              <button type="button" class="time-btn" data-shift-ms="-3600000" data-i18n="time_m1h">−1h</button>
+              <button type="button" class="time-btn" data-shift-ms="3600000" data-i18n="time_p1h">+1h</button>
+              <button type="button" class="time-btn" data-shift-ms="-86400000" data-i18n="time_m1d">−1d</button>
+              <button type="button" class="time-btn" data-shift-ms="86400000" data-i18n="time_p1d">+1d</button>
+              <button type="button" class="time-btn" data-shift-ms="-604800000" data-i18n="time_m1w">−1w</button>
+              <button type="button" class="time-btn" data-shift-ms="604800000" data-i18n="time_p1w">+1w</button>
+              <button type="button" class="time-btn" data-shift-ms="-2592000000" data-i18n="time_m1mo">−1mo</button>
+              <button type="button" class="time-btn" data-shift-ms="2592000000" data-i18n="time_p1mo">+1mo</button>
+              <button type="button" class="time-btn" data-shift-ms="-31557600000" data-i18n="time_m1y">−1y</button>
+              <button type="button" class="time-btn" data-shift-ms="31557600000" data-i18n="time_p1y">+1y</button>
+              <button type="button" class="time-btn" data-shift-ms="-315576000000" data-i18n="time_m10y">−10y</button>
+              <button type="button" class="time-btn" data-shift-ms="315576000000" data-i18n="time_p10y">+10y</button>
+            </div>
+          </div>
+        </aside>
+
+        <main class="viewport">
+          <div class="viewport__frame viewport__frame--square" id="viewport-frame">
+            <div class="viewport__stack" id="viewport-stack">
+              <canvas id="chart-webgl" hidden></canvas>
+              <svg
+                id="system"
+                viewBox="-420 -420 840 840"
+                role="img"
+                data-i18n-aria="aria_system"
+                preserveAspectRatio="xMidYMid meet"
+              >
+                <defs>
+                  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="1.2" result="b" />
+                    <feMerge>
+                      <feMergeNode in="b" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                  <filter id="glow-tight" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="0.35" result="b" />
+                    <feMerge>
+                      <feMergeNode in="b" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                <g id="chart-scene">
+                  <g id="orbits"></g>
+                  <g id="belts"></g>
+                  <g id="bodies"></g>
+                  <g id="labels"></g>
+                </g>
+              </svg>
+            </div>
+            <div class="orb-toolbar">
+              <button type="button" class="orb-btn" id="aspect-square" aria-pressed="true" data-i18n-title="title_aspect_sq" title="Square">□</button>
+              <button type="button" class="orb-btn" id="aspect-rect" aria-pressed="false" data-i18n-title="title_aspect_rect" title="Wide">▭</button>
+            </div>
+          </div>
+        </main>
+
+        <aside class="panel panel--right">
+          <h2 class="panel__title" data-i18n="panel_telemetry">TELEMETRY</h2>
+        </aside>
+      </div>
+
+      <footer class="status-line">
+        <span id="footer-coords">—</span>
+        <span class="sep">|</span>
+        <span data-i18n="footer_tag">HELIOCENTRIC MEAN LONGITUDE · SIDEREAL PERIODS · REAL-TIME CLOCK</span>
+      </footer>
+    </div>
+
+      <div class="crt-grain-layer" aria-hidden="true"></div>
+    </div>
+
+    <div id="glitch-fx-layer" class="glitch-fx-layer" aria-hidden="true"></div>
+    <button type="button" class="session-exit" id="session-exit">ВЫЙТИ</button>
+    <button type="button" class="lang-toggle" id="lang-toggle" aria-label="Language">EN / RU</button>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

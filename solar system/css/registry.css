@@ -1,0 +1,57 @@
+.registry {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.registry li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) minmax(64px, auto) 52px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-dim);
+  font-size: 11px;
+}
+
+.registry .swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 0;
+  border: 1px solid rgba(200, 255, 240, 0.2);
+}
+
+.registry li.registry__row--target {
+  cursor: pointer;
+}
+
+.registry li.registry__row--target:hover {
+  background: rgba(20, 60, 58, 0.35);
+}
+
+.registry li.registry__row--target:hover .swatch {
+  border-color: rgba(180, 255, 240, 0.55);
+  box-shadow: 0 0 6px rgba(120, 240, 220, 0.25);
+}
+
+.registry .name {
+  letter-spacing: 0.06em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.registry .registry-type {
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  text-align: right;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.registry .deg {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

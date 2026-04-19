@@ -1,0 +1,22 @@
+/* Pixel / CRT-terminal look: crisp type, aliased vectors, chart labels use UI font stack */
+
+html {
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+  text-rendering: optimizeSpeed;
+}
+
+#system text.chart-label {
+  font-family: var(--font), ui-monospace, monospace;
+  text-rendering: optimizeSpeed;
+}
+
+#orbits path,
+#orbits circle,
+#belts circle {
+  shape-rendering: crispEdges;
+}
+
+#bodies .body-disk {
+  shape-rendering: crispEdges;
+}

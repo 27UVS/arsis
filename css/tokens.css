@@ -1,0 +1,13 @@
+:root {
+  --void: #030d0f;
+  --panel: #051215;
+  --panel-2: #071a1d;
+  --line: rgba(160, 235, 228, 0.42);
+  --line-dim: rgba(120, 210, 200, 0.14);
+  --text: #c8f5ee;
+  --text-dim: rgba(170, 228, 218, 0.55);
+  --bright: #e8fff9;
+  --glow: rgba(190, 255, 245, 0.35);
+  --font: "VT323", ui-monospace, monospace;
+  --chrome-y: clamp(112px, 22vh, 200px);
+}

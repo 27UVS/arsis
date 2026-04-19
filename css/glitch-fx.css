@@ -1,0 +1,57 @@
+/* Full-stage glitch: white interference + tear (clip + shift) on #app-glitch-stage */
+
+.app-glitch-stage {
+  position: relative;
+  width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  z-index: 0;
+}
+
+.app-glitch-stage > .crt-root {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.glitch-fx-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  overflow: hidden;
+}
+
+.glitch-spark {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.92);
+  mix-blend-mode: screen;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.55);
+  animation: glitch-spark-fade 0.16s linear forwards;
+}
+
+.glitch-spark--v {
+  animation-duration: 0.2s;
+}
+
+@keyframes glitch-spark-fade {
+  0% {
+    opacity: 0;
+  }
+  22% {
+    opacity: 1;
+  }
+  62% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glitch-spark {
+    animation: none;
+    opacity: 0;
+  }
+}

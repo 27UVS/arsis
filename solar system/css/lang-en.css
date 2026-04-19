@@ -1,0 +1,94 @@
+/* English UI: slightly larger type (Latin copy + longer words). Active when `document.documentElement.lang === "en"`. */
+
+html:lang(en),
+html:lang(en) body {
+  font-size: 18px;
+}
+
+html:lang(en) .brand__mark {
+  font-size: 19px;
+}
+
+html:lang(en) .brand__sub {
+  font-size: 12px;
+}
+
+html:lang(en) .pill {
+  font-size: 11px;
+}
+
+html:lang(en) .panel__title {
+  font-size: 13px;
+}
+
+html:lang(en) .label {
+  font-size: 10px;
+}
+
+html:lang(en) .mono {
+  font-size: 13px;
+}
+
+html:lang(en) .mono.small {
+  font-size: 12px;
+}
+
+html:lang(en) .chip-toggle {
+  font-size: 12px;
+}
+
+html:lang(en) .time-panel__clock {
+  font-size: 13px;
+}
+
+html:lang(en) .time-btn {
+  font-size: 11px;
+}
+
+html:lang(en) .segment-toggle__caps {
+  font-size: 10px;
+}
+
+html:lang(en) .registry li {
+  font-size: 12px;
+}
+
+html:lang(en) .registry .registry-type {
+  font-size: 10px;
+}
+
+html:lang(en) .chart3d-label {
+  font-size: 15px;
+}
+
+html:lang(en) .chart3d-label--moon {
+  font-size: 12px;
+}
+
+html:lang(en) .orb-btn {
+  font-size: 13px;
+}
+
+html:lang(en) .orb-btn--text {
+  font-size: 11px;
+}
+
+html:lang(en) .signal__cap {
+  font-size: 9px;
+}
+
+html:lang(en) .ticker {
+  font-size: 10px;
+}
+
+html:lang(en) .status-line {
+  font-size: 11px;
+}
+
+html:lang(en) .lang-toggle {
+  font-size: 13px;
+}
+
+html:lang(en) .session-exit {
+  font-size: 13px;
+}

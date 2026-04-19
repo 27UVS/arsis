@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="assets/flavicon.ico" type="image/x-icon" />
+  <title>ARSIS — доступ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Michroma&family=VT323&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="page-login">
+  <svg class="crt-filters" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="crt-grain" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" seed="42" result="noise" />
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.35  0 0 0 0 0.55  0 0 0 0 0.52  0 0 0 0.22 0" result="tinted" />
+        <feComposite in="tinted" in2="SourceGraphic" operator="over" />
+      </filter>
+    </defs>
+  </svg>
+
+  <div id="app-glitch-stage" class="app-glitch-stage">
+    <div class="crt-root crt-root--login">
+      <div class="crt-scanlines" aria-hidden="true"></div>
+      <div class="crt-pixel-grid" aria-hidden="true"></div>
+
+      <main class="login-main">
+        <div class="login-brand">
+          <img
+            class="login-brand__logo login-brand__logo--glitch"
+            src="assets/logo.png"
+            width="560"
+            height="640"
+            alt="ARSIS: рука с кубиком Рубика"
+          />
+          <h1 class="login-brand__title login-brand__title--glitch">ARSIS</h1>
+          <p class="login-brand__sub">
+            Aerospace Research &amp; Surveillance<br />
+            Intelligence Systems
+          </p>
+        </div>
+
+        <form id="login-form" class="login-form" autocomplete="on" novalidate>
+          <div class="login-form__field">
+            <label class="login-form__label" for="login-user">ЛОГИН</label>
+            <input
+              id="login-user"
+              class="login-form__input"
+              name="username"
+              type="text"
+              autocomplete="username"
+              required
+            />
+          </div>
+          <div class="login-form__field">
+            <label class="login-form__label" for="login-pass">ПАРОЛЬ</label>
+            <input
+              id="login-pass"
+              class="login-form__input"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+          <p id="login-error" class="login-form__error" hidden></p>
+          <button type="submit" class="login-form__submit">ПОДТВЕРДИТЬ</button>
+        </form>
+      </main>
+
+      <div class="crt-grain-layer" aria-hidden="true"></div>
+    </div>
+
+    <div id="glitch-fx-layer" class="glitch-fx-layer" aria-hidden="true"></div>
+  </div>
+
+  <script type="module" src="js/login.js"></script>
+</body>
+</html>
