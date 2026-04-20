@@ -11,6 +11,7 @@ import { app } from "./state.js";
 import { OBJECTS, MOON_ALL, getRpx, planetOrbitPolylinePx } from "./model.js";
 import { pxFromAuChart, buildBeltLayer } from "./orbits.js";
 import { planetDrawRadius, sunDrawRadius, moonDiskPx } from "./appearance.js";
+import { styleSunSvgLayers } from "./sun-luminosity.js";
 import { t } from "./translate.js";
 import { bodyLabel } from "./format.js";
 import { updateLabelVisibility, syncNameToggleButtons } from "./labels.js";
@@ -149,13 +150,17 @@ export function buildSvg() {
     g.setAttribute("id", `body-${o.id}`);
 
     if (o.marker === "sun") {
-      const sun = document.createElementNS(NS, "circle");
       const sr = sunDrawRadius();
+      const aura = document.createElementNS(NS, "circle");
+      aura.setAttribute("id", "sun-aura-bloom");
+      aura.setAttribute("pointer-events", "none");
+      aura.setAttribute("r", String(sr));
+      const sun = document.createElementNS(NS, "circle");
       sun.setAttribute("class", "body-disk");
       sun.setAttribute("r", String(sr));
-      sun.setAttribute("fill", o.color);
-      sun.setAttribute("filter", app.orbitMode === "realistic" && sr < 56 ? "url(#glow-tight)" : "url(#glow)");
+      g.appendChild(aura);
       g.appendChild(sun);
+      styleSunSvgLayers(sun, aura, o.color);
     } else {
       const rp = getRpx(o);
       const pr = planetDrawRadius(o.id, rp);

@@ -1,10 +1,11 @@
-import { app, persistLang } from "./state.js";
+import { app } from "./state.js";
 import { t } from "./translate.js";
 import { updateScaleUi } from "./scale-ui.js";
 import { updateTimeRateReadout } from "./time-panel.js";
 import { syncNameToggleButtons } from "./labels.js";
 import { updateChartLabelFontSizes } from "./camera-view.js";
 import { syncView3dToggleButton } from "./view3d.js";
+import { syncSunLuminositySliderUi } from "./sun-luminosity.js";
 
 export function applyStaticI18n() {
   document.documentElement.lang = app.lang;
@@ -22,6 +23,7 @@ export function applyStaticI18n() {
     if (key) el.setAttribute("title", t(key));
   });
 
+  document.getElementById("time-back")?.setAttribute("title", t("time_back_tip"));
   document.getElementById("time-slower")?.setAttribute("title", t("time_slower_tip"));
   document.getElementById("time-faster")?.setAttribute("title", t("time_faster_tip"));
 
@@ -42,12 +44,6 @@ export function applyStaticI18n() {
     scaleBtn.setAttribute("aria-label", t("aria_scale_toggle"));
   }
 
-  const btn = document.getElementById("lang-toggle");
-  if (btn) {
-    btn.setAttribute("aria-label", t("lang_aria"));
-    btn.textContent = app.lang === "ru" ? t("lang_go_en") : t("lang_go_ru");
-  }
-
   const exitBtn = document.getElementById("session-exit");
   if (exitBtn) {
     exitBtn.setAttribute("aria-label", t("session_exit_aria"));
@@ -57,15 +53,12 @@ export function applyStaticI18n() {
   document.getElementById("toggle-planet-names")?.setAttribute("aria-label", t("aria_toggle_planet_names"));
   document.getElementById("toggle-moon-names")?.setAttribute("aria-label", t("aria_toggle_moon_names"));
 
+  document.getElementById("sun-luminosity")?.setAttribute("aria-label", t("aria_sun_luminosity"));
+
   updateScaleUi();
   updateTimeRateReadout();
   syncNameToggleButtons();
   updateChartLabelFontSizes();
   syncView3dToggleButton();
-}
-
-export function setAppLang(next) {
-  app.lang = next;
-  persistLang();
-  applyStaticI18n();
+  syncSunLuminositySliderUi();
 }

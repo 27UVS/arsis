@@ -1,18 +1,26 @@
 /**
  * ARSIS solar system — entry. Wires modules, DOM events, and animation loop.
  */
-import { app, persistOrbitMode, persistAspectMode } from "./state.js";
+import { app, persistOrbitMode } from "./state.js";
 import { J2000_MS } from "./constants.js";
 import { meanLongitudeRad } from "./model.js";
 import { buildSvg } from "./svg-build.js";
 import { applyViewBox, fitWorld } from "./camera-view.js";
-import { applyStaticI18n, setAppLang } from "./i18n-apply.js";
+import { applyStaticI18n } from "./i18n-apply.js";
 import { updatePositions, updateBeltRotation } from "./motion.js";
 import { fillRegistry, focusObjectFromRegistry } from "./registry.js";
 import { applyChartFollow2d, wireTrackedBodyOutsidePointer } from "./track-follow.js";
 import { footerLine } from "./telemetry.js";
 import { fmtDelta } from "./format.js";
-import { fmtUtc, tickSimClock, resetSimTime, shiftSimTime, stepTimeRate } from "./sim-time.js";
+import {
+  fmtUtcDisplay,
+  tickSimClock,
+  resetSimTime,
+  shiftSimTime,
+  speedBackward,
+  slowDownTime,
+  speedForward,
+} from "./sim-time.js";
 import { updateTimeRateReadout } from "./time-panel.js";
 import { onWheel, onPointerDown, onPointerMove, onPointerUp, resetInteraction } from "./interaction.js";
 import { setShowPlanetNames, getShowPlanetNames, setShowMoonNames, getShowMoonNames } from "./labels.js";
@@ -24,27 +32,13 @@ import {
   applyBoot3dIfNeeded,
 } from "./view3d.js";
 import { syncChart3dFromSim, resizeChart3d, isChart3dMounted, refreshChart3dLabels } from "./chart-3d.js";
+import { initBodyPreview, resizeBodyPreview, tickBodyPreview } from "./body-preview.js";
+import { wireSunLuminosityUi, syncSunLuminositySliderUi, applySunLuminosityAll } from "./sun-luminosity.js";
 import { initGlitchFx } from "../../js/glitch-fx.js";
 import { loadAppConfig } from "../../js/app-config.js";
 import { requireAuth as requireAuthOrRedirect, clearAuth } from "../../js/auth.js";
 
 await requireAuthOrRedirect("../index.html");
-
-function applyAspectMode() {
-  const frame = document.getElementById("viewport-frame");
-  const sq = document.getElementById("aspect-square");
-  const rc = document.getElementById("aspect-rect");
-  if (!frame) return;
-  frame.classList.toggle("viewport__frame--square", app.aspectMode === "square");
-  frame.classList.toggle("viewport__frame--rect", app.aspectMode === "rect");
-  if (sq) sq.setAttribute("aria-pressed", app.aspectMode === "square" ? "true" : "false");
-  if (rc) rc.setAttribute("aria-pressed", app.aspectMode === "rect" ? "true" : "false");
-  persistAspectMode();
-  requestAnimationFrame(() => {
-    applyViewBox();
-    if (isChart3dMounted()) resizeChart3d();
-  });
-}
 
 function setOrbitMode(next) {
   if (next === "simple" && app.view3d) {
@@ -56,11 +50,14 @@ function setOrbitMode(next) {
   syncView3dToggleButton();
   buildSvg();
   fitWorld();
+  applySunLuminosityAll();
 }
 
 function tick() {
   const perfNow = performance.now();
+  const simPrev = app.simTimeMs;
   tickSimClock(perfNow);
+  const simDelta = app.simTimeMs - simPrev;
 
   const state = meanLongitudeRad(app.simTimeMs);
 
@@ -76,20 +73,17 @@ function tick() {
   footerLine(state);
 
   const clock = document.getElementById("clock");
-  if (clock) clock.textContent = fmtUtc(Date.now());
+  if (clock) clock.textContent = fmtUtcDisplay(Date.now());
 
   const simClock = document.getElementById("sim-clock");
-  if (simClock) simClock.textContent = fmtUtc(app.simTimeMs);
+  if (simClock) simClock.textContent = fmtUtcDisplay(app.simTimeMs);
 
   const delta = document.getElementById("delta-readout");
   if (delta) delta.textContent = fmtDelta(app.simTimeMs - J2000_MS);
 
+  tickBodyPreview(simDelta);
   requestAnimationFrame(tick);
 }
-
-document.getElementById("lang-toggle")?.addEventListener("click", () => {
-  setAppLang(app.lang === "ru" ? "en" : "ru");
-});
 
 document.getElementById("session-exit")?.addEventListener("click", () => {
   clearAuth();
@@ -120,16 +114,6 @@ document.getElementById("toggle-moon-names")?.addEventListener("click", () => {
   if (app.view3d) refreshChart3dLabels();
 });
 
-document.getElementById("aspect-square")?.addEventListener("click", () => {
-  app.aspectMode = "square";
-  applyAspectMode();
-});
-
-document.getElementById("aspect-rect")?.addEventListener("click", () => {
-  app.aspectMode = "rect";
-  applyAspectMode();
-});
-
 document.getElementById("registry")?.addEventListener("click", (e) => {
   const el = e.target instanceof Element ? e.target.closest("[data-focus-object]") : null;
   if (!el) return;
@@ -144,13 +128,18 @@ document.getElementById("time-reset")?.addEventListener("click", () => {
   updateTimeRateReadout();
 });
 
+document.getElementById("time-back")?.addEventListener("click", () => {
+  speedBackward();
+  updateTimeRateReadout();
+});
+
 document.getElementById("time-slower")?.addEventListener("click", () => {
-  stepTimeRate(-1);
+  slowDownTime();
   updateTimeRateReadout();
 });
 
 document.getElementById("time-faster")?.addEventListener("click", () => {
-  stepTimeRate(1);
+  speedForward();
   updateTimeRateReadout();
 });
 
@@ -181,13 +170,22 @@ if (frameEl && typeof ResizeObserver !== "undefined") {
   ro.observe(frameEl);
 }
 
+const previewEl = document.getElementById("body-preview");
+if (previewEl && typeof ResizeObserver !== "undefined") {
+  const ro = new ResizeObserver(() => resizeBodyPreview());
+  ro.observe(previewEl);
+}
+
 buildSvg();
 syncView3dToggleButton();
-applyAspectMode();
 applyBoot3dIfNeeded();
 applyStaticI18n();
+wireSunLuminosityUi();
+syncSunLuminositySliderUi();
 updateTimeRateReadout();
 wireTrackedBodyOutsidePointer();
+initBodyPreview();
+applySunLuminosityAll();
 loadAppConfig().then((cfg) => {
   if (cfg.glitchFx) initGlitchFx();
 });

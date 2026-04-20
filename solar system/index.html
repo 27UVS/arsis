@@ -87,6 +87,24 @@
               </button>
             </div>
           </div>
+          <div class="panel__block luminance-panel">
+            <div class="label" data-i18n="sun_luminosity_title">SUN LUMINOSITY</div>
+            <input
+              type="range"
+              id="sun-luminosity"
+              class="luminance-panel__range"
+              min="0"
+              max="100"
+              step="1"
+              value="42"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            />
+            <div class="luminance-panel__caps">
+              <span class="luminance-panel__cap" data-i18n="sun_luminosity_lo">dim</span>
+              <span class="luminance-panel__cap" data-i18n="sun_luminosity_hi">bright</span>
+            </div>
+          </div>
           <div class="scale-panel">
             <div class="label" data-i18n="scale_panel_title">ORBIT SCALE</div>
             <button
@@ -134,9 +152,10 @@
             <div class="time-panel__row">
               <button type="button" class="time-btn time-btn--wide" id="time-reset" data-i18n="time_reset">RESET</button>
             </div>
-            <div class="time-panel__row time-panel__row--pair">
-              <button type="button" class="time-btn" id="time-slower" data-i18n="time_slower" title="">−</button>
-              <button type="button" class="time-btn" id="time-faster" data-i18n="time_faster" title="">+</button>
+            <div class="time-panel__row">
+              <button type="button" class="time-btn" id="time-back" data-i18n="time_back" title="">НАЗАД</button>
+              <button type="button" class="time-btn" id="time-slower" data-i18n="time_slower" title="">ЗАМЕДЛЕНИЕ</button>
+              <button type="button" class="time-btn" id="time-faster" data-i18n="time_faster" title="">ВПЕРЁД</button>
             </div>
             <div class="label time-panel__shift-label" data-i18n="time_lbl_shift">ΔT SHIFT</div>
             <div class="time-panel__grid">
@@ -157,7 +176,7 @@
         </aside>
 
         <main class="viewport">
-          <div class="viewport__frame viewport__frame--square" id="viewport-frame">
+          <div class="viewport__frame viewport__frame--rect" id="viewport-frame">
             <div class="viewport__stack" id="viewport-stack">
               <canvas id="chart-webgl" hidden></canvas>
               <svg
@@ -169,14 +188,14 @@
               >
                 <defs>
                   <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="1.2" result="b" />
+                    <feGaussianBlur id="sun-glow-blur-wide" stdDeviation="1.2" result="b" />
                     <feMerge>
                       <feMergeNode in="b" />
                       <feMergeNode in="SourceGraphic" />
                     </feMerge>
                   </filter>
                   <filter id="glow-tight" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="0.35" result="b" />
+                    <feGaussianBlur id="sun-glow-blur-tight" stdDeviation="0.35" result="b" />
                     <feMerge>
                       <feMergeNode in="b" />
                       <feMergeNode in="SourceGraphic" />
@@ -191,15 +210,18 @@
                 </g>
               </svg>
             </div>
-            <div class="orb-toolbar">
-              <button type="button" class="orb-btn" id="aspect-square" aria-pressed="true" data-i18n-title="title_aspect_sq" title="Square">□</button>
-              <button type="button" class="orb-btn" id="aspect-rect" aria-pressed="false" data-i18n-title="title_aspect_rect" title="Wide">▭</button>
-            </div>
           </div>
         </main>
 
         <aside class="panel panel--right">
           <h2 class="panel__title" data-i18n="panel_telemetry">TELEMETRY</h2>
+          <div class="panel__block">
+            <div class="label">ОБЗОР ОБЪЕКТА</div>
+            <div class="mono body-preview__name" id="body-preview-name">—</div>
+            <div class="body-preview" id="body-preview">
+              <canvas class="body-preview__canvas" id="body-preview-canvas"></canvas>
+            </div>
+          </div>
         </aside>
       </div>
 
@@ -215,7 +237,7 @@
 
     <div id="glitch-fx-layer" class="glitch-fx-layer" aria-hidden="true"></div>
     <button type="button" class="session-exit" id="session-exit">ВЫЙТИ</button>
-    <button type="button" class="lang-toggle" id="lang-toggle" aria-label="Language">EN / RU</button>
+    <!-- Language toggle removed: RU-only UI for now. -->
   </div>
 
   <script type="module" src="js/main.js"></script>

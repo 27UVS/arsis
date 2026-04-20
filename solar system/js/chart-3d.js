@@ -43,6 +43,8 @@ let stackEl = null;
 const planetMeshes = new Map();
 /** @type {THREE.Mesh | null} */
 let sunMesh = null;
+/** @type {THREE.PointLight | null} */
+let sunPointLight = null;
 /** @type {THREE.InstancedMesh | null} */
 let moonInstanced = null;
 /** @type {THREE.Matrix4} */
@@ -83,6 +85,28 @@ function makeBodyMaterial(cssColor, opts = {}) {
     metalness: 0.06,
     roughness: 0.52,
   });
+}
+
+export function syncChart3dSunLuminosity() {
+  const sun = OBJECTS.find((o) => o.marker === "sun");
+  if (!sun) return;
+  const L = app.sunLuminosity;
+  const c = new THREE.Color(sun.color);
+
+  if (sunMesh) {
+    const mat = sunMesh.material;
+    if (mat && mat.isMeshStandardMaterial) {
+      mat.color.copy(c);
+      mat.emissive.copy(c);
+      // Keep disk hue; “brightness” is mostly the point light on other bodies + mild emissive.
+      mat.emissiveIntensity = 0.05 + L * 0.22;
+    }
+  }
+
+  if (sunPointLight) {
+    sunPointLight.color.copy(c);
+    sunPointLight.intensity = L * L * 24;
+  }
 }
 
 /** Chart Y → Three.js Y so prograde motion reads counter-clockwise from the «north» side of the ecliptic. */
@@ -244,6 +268,11 @@ export function mountChart3d() {
       sunMesh.scale.setScalar(sr);
       sunMesh.userData.id = o.id;
       scene.add(sunMesh);
+      sunPointLight = new THREE.PointLight(0xb8fff0, 0, 0, 2);
+      sunPointLight.decay = 2;
+      sunPointLight.position.set(0, 0, 0);
+      scene.add(sunPointLight);
+      syncChart3dSunLuminosity();
       continue;
     }
     const rPx = getRpx(o);
@@ -562,6 +591,7 @@ export function unmountChart3d() {
   planetLabels.clear();
   moonLabels.clear();
   sunMesh = null;
+  sunPointLight = null;
   moonInstanced = null;
   beltInnerPoints3d = null;
   beltKuiperPoints3d = null;

@@ -2,12 +2,15 @@ import { t } from "./translate.js";
 import { getTimeRate } from "./sim-time.js";
 
 export function formatTimeRate(r) {
-  if (Math.abs(r - 1) < 1e-12) return t("time_rate_real");
-  if (r >= 1e6) return `${(r / 1e6).toFixed(2)} M×`;
-  if (r >= 1000) return `${(r / 1000).toFixed(r >= 1e5 ? 0 : 1)} k×`;
-  if (r >= 1) return `${r < 20 && r % 1 !== 0 ? r.toFixed(1) : r.toFixed(0)}×`;
-  if (r >= 0.01) return `${r.toFixed(3)}×`;
-  return `${r.toExponential(1)}×`;
+  const back = r < 0;
+  const a = Math.abs(r);
+  const prefix = back ? "← " : "";
+  if (Math.abs(a - 1) < 1e-12) return `${prefix}${t("time_rate_real")}`;
+  if (a >= 1e6) return `${prefix}${(a / 1e6).toFixed(2)} M×`;
+  if (a >= 1000) return `${prefix}${(a / 1000).toFixed(a >= 1e5 ? 0 : 1)} k×`;
+  if (a >= 1) return `${prefix}${a < 20 && a % 1 !== 0 ? a.toFixed(1) : a.toFixed(0)}×`;
+  if (a >= 0.01) return `${prefix}${a.toFixed(3)}×`;
+  return `${prefix}${a.toExponential(1)}×`;
 }
 
 export function updateTimeRateReadout() {

@@ -25,10 +25,9 @@ export const DEFAULT_TIME_RATE_INDEX = TIME_RATE_STEPS.findIndex((x) => Math.abs
 
 export const J2000_MS = Date.UTC(2000, 0, 1, 11, 58, 55, 816);
 export const MS_PER_DAY = 86400000;
-export const LANG_KEY = "arsis-lang";
 export const ORBIT_KEY = "arsis-orbit-mode";
-export const ASPECT_KEY = "arsis-viewport-aspect";
 export const VIEW3D_KEY = "arsis-chart-view3d";
+export const SUN_LUMINOSITY_KEY = "arsis-sun-luminosity";
 export const NAMES_PLANETS_KEY = "arsis-show-planet-names";
 export const NAMES_MOONS_KEY = "arsis-show-moon-names";
 

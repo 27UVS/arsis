@@ -1,6 +1,6 @@
 {
   "glitchFx": true,
-  "authEnabled": false,
+  "authEnabled": true,
   "auth": {
     "username": "uvs",
     "password": "terra1234"
