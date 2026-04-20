@@ -26,6 +26,9 @@ import {
 import { syncChart3dFromSim, resizeChart3d, isChart3dMounted, refreshChart3dLabels } from "./chart-3d.js";
 import { initGlitchFx } from "../../js/glitch-fx.js";
 import { loadAppConfig } from "../../js/app-config.js";
+import { requireAuth as requireAuthOrRedirect, clearAuth } from "../../js/auth.js";
+
+await requireAuthOrRedirect("../index.html");
 
 function applyAspectMode() {
   const frame = document.getElementById("viewport-frame");
@@ -89,7 +92,7 @@ document.getElementById("lang-toggle")?.addEventListener("click", () => {
 });
 
 document.getElementById("session-exit")?.addEventListener("click", () => {
-  sessionStorage.removeItem("arsis_auth");
+  clearAuth();
   window.location.href = "../index.html";
 });
 

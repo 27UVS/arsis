@@ -45,32 +45,42 @@
           </p>
         </div>
 
-        <form id="login-form" class="login-form" autocomplete="on" novalidate>
-          <div class="login-form__field">
-            <label class="login-form__label" for="login-user">ЛОГИН</label>
-            <input
-              id="login-user"
-              class="login-form__input"
-              name="username"
-              type="text"
-              autocomplete="username"
-              required
-            />
+        <section id="boot-loader" class="boot-loader" aria-live="polite">
+          <div class="boot-loader__box" aria-hidden="true">
+            <div class="boot-loader__fill" id="boot-fill"></div>
           </div>
-          <div class="login-form__field">
-            <label class="login-form__label" for="login-pass">ПАРОЛЬ</label>
-            <input
-              id="login-pass"
-              class="login-form__input"
-              name="password"
-              type="password"
-              autocomplete="current-password"
-              required
-            />
-          </div>
-          <p id="login-error" class="login-form__error" hidden></p>
-          <button type="submit" class="login-form__submit">ПОДТВЕРДИТЬ</button>
-        </form>
+          <div class="boot-loader__text">Загрузка ПО ARSIS...</div>
+          <div class="boot-loader__pct"><span id="boot-percent">0</span>%</div>
+        </section>
+
+        <section id="login-stage" class="login-stage" hidden>
+          <form id="login-form" class="login-form" autocomplete="on" novalidate>
+            <div class="login-form__field">
+              <label class="login-form__label" for="login-user">ЛОГИН</label>
+              <input
+                id="login-user"
+                class="login-form__input"
+                name="username"
+                type="text"
+                autocomplete="username"
+                required
+              />
+            </div>
+            <div class="login-form__field">
+              <label class="login-form__label" for="login-pass">ПАРОЛЬ</label>
+              <input
+                id="login-pass"
+                class="login-form__input"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+            <p id="login-error" class="login-form__error" hidden></p>
+            <button type="submit" class="login-form__submit">ПОДТВЕРДИТЬ</button>
+          </form>
+        </section>
       </main>
 
       <div class="crt-grain-layer" aria-hidden="true"></div>

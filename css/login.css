@@ -130,6 +130,51 @@ body.page-login {
   max-width: 34em;
 }
 
+.boot-loader {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 10px 6px;
+}
+
+.boot-loader__box {
+  width: 100%;
+  height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: transparent;
+  padding: 2px;
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.12);
+}
+
+.boot-loader__fill {
+  height: 100%;
+  width: 0%;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.28);
+  transition: width 120ms linear;
+}
+
+.boot-loader__text {
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.14);
+}
+
+.boot-loader__pct {
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.16);
+}
+
+.login-stage[hidden],
+.boot-loader[hidden] {
+  display: none;
+}
+
 .login-form {
   width: min(360px, 100%);
   display: flex;
