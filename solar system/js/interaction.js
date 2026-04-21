@@ -7,11 +7,22 @@ function chartIs3d() {
   return app.view3d;
 }
 
+let _vbRaf = 0;
+function requestViewBox() {
+  if (_vbRaf) return;
+  _vbRaf = requestAnimationFrame(() => {
+    _vbRaf = 0;
+    applyViewBox();
+  });
+}
+
 /** @type {{ x: number; y: number } | null} */
 let drag = null;
 
 export function resetInteraction() {
   drag = null;
+  if (_vbRaf) cancelAnimationFrame(_vbRaf);
+  _vbRaf = 0;
 }
 
 export function onWheel(e) {
@@ -33,7 +44,7 @@ export function onWheel(e) {
   app.camera.camX = wx - u * nw + nw / 2;
   app.camera.camY = wy - v * nh + nh / 2;
   app.camera.vbW = nw;
-  applyViewBox();
+  requestViewBox();
 }
 
 export function onPointerDown(e) {
@@ -68,7 +79,7 @@ export function onPointerMove(e) {
   const vbH = app.camera.vbW / (rect.width / Math.max(1, rect.height));
   app.camera.camX -= (dx / rect.width) * app.camera.vbW;
   app.camera.camY -= (dy / rect.height) * vbH;
-  applyViewBox();
+  requestViewBox();
 }
 
 export function onPointerUp(e) {

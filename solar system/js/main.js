@@ -31,9 +31,8 @@ import {
   setView3d,
   applyBoot3dIfNeeded,
 } from "./view3d.js";
-import { syncChart3dFromSim, resizeChart3d, isChart3dMounted, refreshChart3dLabels } from "./chart-3d.js";
+import { syncChart3dFromSim, resizeChart3d, isChart3dMounted } from "./chart-3d.js";
 import { initBodyPreview, resizeBodyPreview, tickBodyPreview } from "./body-preview.js";
-import { wireSunLuminosityUi, syncSunLuminositySliderUi, applySunLuminosityAll } from "./sun-luminosity.js";
 import { initGlitchFx } from "../../js/glitch-fx.js";
 import { loadAppConfig } from "../../js/app-config.js";
 import { requireAuth as requireAuthOrRedirect, clearAuth } from "../../js/auth.js";
@@ -50,7 +49,6 @@ function setOrbitMode(next) {
   syncView3dToggleButton();
   buildSvg();
   fitWorld();
-  applySunLuminosityAll();
 }
 
 function tick() {
@@ -106,12 +104,10 @@ document.getElementById("view-3d-toggle")?.addEventListener("click", () => {
 
 document.getElementById("toggle-planet-names")?.addEventListener("click", () => {
   setShowPlanetNames(!getShowPlanetNames());
-  if (app.view3d) refreshChart3dLabels();
 });
 
 document.getElementById("toggle-moon-names")?.addEventListener("click", () => {
   setShowMoonNames(!getShowMoonNames());
-  if (app.view3d) refreshChart3dLabels();
 });
 
 document.getElementById("registry")?.addEventListener("click", (e) => {
@@ -180,12 +176,9 @@ buildSvg();
 syncView3dToggleButton();
 applyBoot3dIfNeeded();
 applyStaticI18n();
-wireSunLuminosityUi();
-syncSunLuminositySliderUi();
 updateTimeRateReadout();
 wireTrackedBodyOutsidePointer();
 initBodyPreview();
-applySunLuminosityAll();
 loadAppConfig().then((cfg) => {
   if (cfg.glitchFx) initGlitchFx();
 });

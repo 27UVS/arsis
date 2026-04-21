@@ -53,6 +53,17 @@ export function applyViewBox() {
   const vx = app.camera.camX - app.camera.vbW / 2;
   const vy = app.camera.camY - vbH / 2;
   svg.setAttribute("viewBox", `${vx} ${vy} ${app.camera.vbW} ${vbH}`);
+
+  // Performance: keep SVG glow blur roughly constant in screen pixels.
+  // Without this, zooming in makes the gaussian blur cover a huge screen area and can freeze the tab.
+  if (r.width >= 2) {
+    const vuPerCssPx = app.camera.vbW / r.width;
+    const wide = svg.querySelector("#glow feGaussianBlur");
+    if (wide instanceof SVGFEGaussianBlurElement) wide.setAttribute("stdDeviation", String(1.2 * vuPerCssPx));
+    const tight = svg.querySelector("#glow-tight feGaussianBlur");
+    if (tight instanceof SVGFEGaussianBlurElement) tight.setAttribute("stdDeviation", String(0.35 * vuPerCssPx));
+  }
+
   updateChartLabelFontSizes();
 }
 

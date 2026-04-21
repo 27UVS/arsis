@@ -65,6 +65,10 @@ html:lang(en) .chart3d-label--moon {
   font-size: 12px;
 }
 
+html:lang(en) .chart3d-label--sat {
+  font-size: 15px;
+}
+
 html:lang(en) .orb-btn {
   font-size: 13px;
 }

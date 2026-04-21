@@ -41,6 +41,11 @@
   text-overflow: ellipsis;
 }
 
+.registry .name.name--probe {
+  font-size: 15px;
+  letter-spacing: 0.12em;
+}
+
 .registry .registry-type {
   font-size: 10px;
   letter-spacing: 0.05em;

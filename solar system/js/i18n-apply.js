@@ -5,7 +5,6 @@ import { updateTimeRateReadout } from "./time-panel.js";
 import { syncNameToggleButtons } from "./labels.js";
 import { updateChartLabelFontSizes } from "./camera-view.js";
 import { syncView3dToggleButton } from "./view3d.js";
-import { syncSunLuminositySliderUi } from "./sun-luminosity.js";
 
 export function applyStaticI18n() {
   document.documentElement.lang = app.lang;
@@ -53,12 +52,9 @@ export function applyStaticI18n() {
   document.getElementById("toggle-planet-names")?.setAttribute("aria-label", t("aria_toggle_planet_names"));
   document.getElementById("toggle-moon-names")?.setAttribute("aria-label", t("aria_toggle_moon_names"));
 
-  document.getElementById("sun-luminosity")?.setAttribute("aria-label", t("aria_sun_luminosity"));
-
   updateScaleUi();
   updateTimeRateReadout();
   syncNameToggleButtons();
   updateChartLabelFontSizes();
   syncView3dToggleButton();
-  syncSunLuminositySliderUi();
 }

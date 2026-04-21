@@ -34,6 +34,26 @@ const SPIN = /** @type {Record<string, BodySpin>} */ ({
   charon: { eqKm: 606.0, polarKm: 606.0, tiltDeg: 0.0, rotPeriodHours: 153.3 },
 });
 
+/** Triaxial semi-axis ratios (longest … shortest), max = 1 — for “potato” preview, not ephemeris. */
+const IRREGULAR_MOON_TRIRAX = /** @type {Record<string, [number, number, number]>} */ ({
+  phobos: [1, 0.815, 0.667],
+  deimos: [1, 0.813, 0.733],
+});
+
+function irregularMoonTrirax(id) {
+  const fixed = IRREGULAR_MOON_TRIRAX[id];
+  if (fixed) return fixed;
+  const s = SPIN[id];
+  if (!s || !MOONS.some((m) => m.id === id)) return null;
+  // Other very small moons: approximate middle axis between equatorial and polar.
+  if (s.eqKm >= 45) return null;
+  const a = Math.max(1e-6, s.eqKm);
+  const c = Math.max(1e-6, s.polarKm);
+  const b = Math.sqrt(a * c) * (0.92 + 0.08 * hash01(id));
+  const m = Math.max(a, b, c);
+  return [a / m, b / m, c / m];
+}
+
 function clamp(v, a, b) {
   return Math.max(a, Math.min(b, v));
 }
@@ -353,6 +373,86 @@ function buildSurfacePoints(id, polarScale, targetR, want) {
   return { pos, col };
 }
 
+/**
+ * Small irregular moons: triaxial ellipsoid + outward bumps (not a near-sphere).
+ * @param {string} id
+ * @param {number} targetR max semi-axis in scene units
+ * @param {number} want point count
+ */
+function buildTriaxialPotatoPoints(id, targetR, want) {
+  const tri = irregularMoonTrirax(id);
+  if (!tri) return buildSurfacePoints(id, 1, targetR, want);
+
+  const mx = Math.max(tri[0], tri[1], tri[2], 1e-9);
+  const a = (targetR * tri[0]) / mx;
+  const b = (targetR * tri[1]) / mx;
+  const c = (targetR * tri[2]) / mx;
+
+  const n = want;
+  const pos = new Float32Array(n * 3);
+  const col = new Float32Array(n * 3);
+  const baseCol = new THREE.Color(bodyColor(id));
+  const br0 = baseCol.r;
+  const bg0 = baseCol.g;
+  const bb0 = baseCol.b;
+
+  let wrote = 0;
+  let tries = 0;
+  const maxTries = n * 90;
+
+  while (wrote < n && tries < maxTries) {
+    tries++;
+    const u = hash21(tries + hash01(id) * 1000);
+    const v = hash21(tries * 1.618 + hash01(id) * 333);
+    const cosLat = 2 * u - 1;
+    const lat = Math.acos(clamp(cosLat, -1, 1)) - Math.PI / 2;
+    const lon = 2 * Math.PI * v;
+
+    const dx = Math.cos(lat) * Math.cos(lon);
+    const dy = Math.sin(lat);
+    const dz = Math.cos(lat) * Math.sin(lon);
+
+    const t =
+      1 /
+      Math.sqrt((dx * dx) / (a * a) + (dy * dy) / (b * b) + (dz * dz) / (c * c) || 1e-12);
+    let px = t * dx;
+    let py = t * dy;
+    let pz = t * dz;
+
+    let nx = px / (a * a);
+    let ny = py / (b * b);
+    let nz = pz / (c * c);
+    const nlen = Math.hypot(nx, ny, nz) || 1;
+    nx /= nlen;
+    ny /= nlen;
+    nz /= nlen;
+
+    const h01 = rockyTerrain(id, lat, lon);
+    const cr = Math.pow(Math.max(0, fbm2(lat * 11, lon * 11, 4) - 0.55), 1.2);
+    const lump = fbm2(lat * 4.2 + hash01(id), lon * 4.2 - hash01(id) * 2, 3);
+    const disp = targetR * (0.028 + h01 * 0.11 + cr * 0.14 + lump * 0.06);
+
+    px += nx * disp;
+    py += ny * disp;
+    pz += nz * disp;
+
+    const o = wrote * 3;
+    pos[o + 0] = px;
+    pos[o + 1] = py;
+    pos[o + 2] = pz;
+    rockyCyanRelief(id, h01 * 0.85 + cr * 0.35, col, o, br0, bg0, bb0);
+    wrote++;
+  }
+
+  if (wrote < n) {
+    return {
+      pos: pos.subarray(0, wrote * 3),
+      col: col.subarray(0, wrote * 3),
+    };
+  }
+  return { pos, col };
+}
+
 let renderer = null;
 let scene = null;
 let camera = null;
@@ -436,6 +536,19 @@ function syncBodyPreviewCaption() {
   if (id === previewCaptionId) return;
   previewCaptionId = id;
   el.textContent = bodyLabel(id);
+}
+
+function setBodyPreviewVisible(on) {
+  const wrap = document.getElementById("body-preview");
+  const name = document.getElementById("body-preview-name");
+  if (wrap) {
+    if (on) wrap.removeAttribute("hidden");
+    else wrap.setAttribute("hidden", "");
+  }
+  if (name) {
+    if (on) name.removeAttribute("hidden");
+    else name.setAttribute("hidden", "");
+  }
 }
 
 function spawnCoronaWisp(targetR) {
@@ -670,8 +783,7 @@ function refreshSunFxVisualAtSim(simMs) {
     const fadeOut = clamp((1 - t) / 0.22, 0, 1);
     const flick = 0.88 + 0.12 * Math.sin((simMs / 1000) * 0.85 + (ev.meta?.phase ?? 0));
     const baseOp = ev.kind === "jet" ? 0.92 : ev.kind === "coronaWisp" ? 0.42 : 0.55;
-    const fxLum = 0.4 + app.sunLuminosity * 0.55;
-    ev.mat.opacity = fadeIn * fadeOut * flick * baseOp * fxLum;
+    ev.mat.opacity = fadeIn * fadeOut * flick * baseOp;
     keep.push(ev);
   }
   sunEvents = keep;
@@ -684,21 +796,19 @@ function updateSunEvents(targetR) {
   // - visible loops: a few per day, live hours
   // - jets/flares: several per day, live minutes
   const dayMs = 24 * 60 * 60 * 1000;
-  const u = app.sunLuminosity;
-  const glowDrive = 0.03 + u * u * 0.97;
-  const loopRatePerMs = (2.2 / dayMs) * glowDrive;
-  const jetRatePerMs = (5.5 / dayMs) * glowDrive;
-  const coronaWispRatePerMs = (6.0 / dayMs) * glowDrive;
+  const loopRatePerMs = 2.2 / dayMs; // ~2.2/day
+  const jetRatePerMs = 5.5 / dayMs; // ~5.5/day
+  const coronaWispRatePerMs = 6.0 / dayMs; // frequent faint corona wisps (not a static shell)
 
   const simMs = sunFxEvalSimMs;
   const nextLoop = { v: nextLoopAtSimMs };
   const nextJet = { v: nextJetAtSimMs };
   const nextWisp = { v: nextCoronaWispAtSimMs };
 
-  // Hard caps scale with luminosity so high = busier corona (illumination-like), low = calm disk.
-  const maxLoops = Math.min(11, Math.max(3, Math.round(3 + u * 8)));
-  const maxJets = Math.min(14, Math.max(3, Math.round(4 + u * 10)));
-  const maxCoronaWisps = Math.min(16, Math.max(3, Math.round(4 + u * 12)));
+  // Hard caps to avoid runaway allocations under extreme accel.
+  const maxLoops = 6;
+  const maxJets = 8;
+  const maxCoronaWisps = 10;
 
   drainSunPoisson(targetR, simMs, nextLoop, loopRatePerMs, () => sunLoopCount, maxLoops, () => spawnSunLoop(targetR));
   drainSunPoisson(targetR, simMs, nextJet, jetRatePerMs, () => sunJetCount, maxJets, () => spawnSunJet(targetR));
@@ -723,6 +833,101 @@ function fitCameraToPoints() {
   camera.position.set(0, r * 0.12, dist);
   camera.lookAt(0, 0, 0);
   camera.updateProjectionMatrix();
+}
+
+function buildProbePoints(id, targetR) {
+  // Cyber-tech probe point-cloud: bus + dish + antenna + solar panels + engines.
+  const seed = id === "sipoc-170333" ? 0x170333 : 0x041132;
+  const rng = mulberry32(seed);
+  const pts = 3600;
+  const pos = new Float32Array(pts * 3);
+  const col = new Float32Array(pts * 3);
+  const base = new THREE.Color(bodyColor("moon")); // cool cyan-white
+
+  const put = (i, x, y, z, glow) => {
+    pos[i * 3 + 0] = x;
+    pos[i * 3 + 1] = y;
+    pos[i * 3 + 2] = z;
+    col[i * 3 + 0] = base.r * glow;
+    col[i * 3 + 1] = base.g * glow;
+    col[i * 3 + 2] = base.b * glow;
+  };
+
+  const pickBoxSurface = (sx, sy, sz) => {
+    // Point on surface of a box (not inside) to avoid “planet-like” filled volume.
+    const face = Math.floor(rng() * 6);
+    const x = (rng() - 0.5) * sx;
+    const y = (rng() - 0.5) * sy;
+    const z = (rng() - 0.5) * sz;
+    switch (face) {
+      case 0:
+        return { x: -sx / 2, y, z };
+      case 1:
+        return { x: sx / 2, y, z };
+      case 2:
+        return { x, y: -sy / 2, z };
+      case 3:
+        return { x, y: sy / 2, z };
+      case 4:
+        return { x, y, z: -sz / 2 };
+      default:
+        return { x, y, z: sz / 2 };
+    }
+  };
+
+  let w = 0;
+  // Bus (rectangular, slightly offset so it never reads like a sphere)
+  for (; w < 1200; w++) {
+    const p = pickBoxSurface(targetR * 0.40, targetR * 0.18, targetR * 0.26);
+    put(w, p.x + targetR * 0.06, p.y, p.z, 0.76 + rng() * 0.28);
+  }
+  // Dish (ring + face) in front
+  const dishR = targetR * 0.32;
+  const dishZ = targetR * 0.34;
+  for (; w < 2450; w++) {
+    const a = rng() * Math.PI * 2;
+    const r = dishR * (0.80 + rng() * 0.20);
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r;
+    const z = dishZ + (rng() - 0.5) * targetR * 0.01;
+    const rim = rng() < 0.65 ? 1.0 : 0.72;
+    put(w, x, y, z, (0.9 + rng() * 0.55) * rim);
+  }
+  // Antenna mast + tip
+  for (; w < 2900; w++) {
+    const t = rng();
+    const x = (rng() - 0.5) * targetR * 0.025;
+    const y = (rng() - 0.5) * targetR * 0.025;
+    const z = dishZ + dishR * 0.35 + t * targetR * 0.62;
+    const tip = t > 0.92 ? 1.35 : 1.0;
+    put(w, x, y, z, (0.82 + rng() * 0.3) * tip);
+  }
+  // Solar panels: two long, very thin rectangles on sides (make silhouette non-spherical).
+  const panelW = targetR * 2.35;
+  const panelH = targetR * 0.24;
+  for (; w < 3350; w++) {
+    const side = rng() < 0.5 ? -1 : 1;
+    const u = rng() - 0.5;
+    const v = rng() - 0.5;
+    const x = side * (targetR * 0.26 + panelW * 0.5) + u * panelW;
+    const y = v * panelH;
+    const z = (rng() - 0.5) * targetR * 0.01; // ultra thin
+    const grid = (Math.abs(u) < 0.46 && Math.abs(v) < 0.46 && (Math.floor((u + 0.5) * 10) % 2 === 0)) ? 1.0 : 0.72;
+    put(w, x, y, z, (0.64 + rng() * 0.22) * grid);
+  }
+  // Engines / exhaust: compact nozzles + streaks behind (along -Z)
+  for (; w < pts; w++) {
+    const nozzle = rng() < 0.55;
+    const a = rng() * Math.PI * 2;
+    const r = targetR * (nozzle ? 0.05 : 0.012);
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r;
+    const t = rng();
+    const z = -targetR * (0.20 + (nozzle ? t * 0.10 : t * 0.55));
+    const glow = nozzle ? 1.35 - t * 0.9 : 0.95 - t * 0.55;
+    put(w, x, y, z, glow);
+  }
+  return { pos, col };
 }
 
 export function initBodyPreview() {
@@ -776,7 +981,14 @@ export function setBodyPreviewTarget(id) {
     clearSunFx();
   }
 
-  const s = getSpin(next);
+  const obj = OBJECTS.find((o) => o.id === next);
+  const isProbe = obj?.marker === "probe";
+  if (isProbe) {
+    setBodyPreviewVisible(false);
+    return;
+  }
+  setBodyPreviewVisible(true);
+  const s = getSpin(isProbe ? "moon" : next);
   const polarScale = s.polarKm / Math.max(1e-6, s.eqKm);
 
   const rocky =
@@ -786,10 +998,16 @@ export function setBodyPreviewTarget(id) {
     next === "pluto" ||
     next === "ceres" ||
     MOONS.some((m) => m.id === next);
+  const potatoMoon = !isProbe && irregularMoonTrirax(next) != null;
   const gas = next === "jupiter" || next === "saturn" || next === "uranus" || next === "neptune";
   const want = next === "sun" ? 9000 : gas ? 9000 : rocky ? 7800 : 5200;
-  const targetR = next === "sun" ? 0.52 : 0.42;
-  const { pos, col } = buildSurfacePoints(next, polarScale, targetR, want);
+  const targetR = next === "sun" ? 0.52 : isProbe ? 0.50 : 0.42;
+  const built = isProbe
+    ? buildProbePoints(next, targetR)
+    : potatoMoon
+      ? buildTriaxialPotatoPoints(next, targetR, want)
+      : buildSurfacePoints(next, polarScale, targetR, want);
+  const { pos, col } = built;
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
@@ -799,19 +1017,24 @@ export function setBodyPreviewTarget(id) {
   const mat = new THREE.PointsMaterial({
     vertexColors: true,
     color: 0xffffff,
-    size: next === "sun" ? 0.0038 : gas ? 0.0034 : rocky ? 0.0035 : 0.0036,
+    size: isProbe ? 0.0032 : next === "sun" ? 0.0038 : gas ? 0.0034 : potatoMoon ? 0.0033 : rocky ? 0.0035 : 0.0036,
     sizeAttenuation: true,
     transparent: true,
-    opacity: next === "earth" ? 0.9 : gas ? 0.88 : 0.78,
-    depthWrite: true,
-    blending: THREE.NormalBlending,
+    opacity: isProbe ? 0.92 : next === "earth" ? 0.9 : gas ? 0.88 : 0.78,
+    depthWrite: !isProbe,
+    blending: isProbe ? THREE.AdditiveBlending : THREE.NormalBlending,
   });
 
   points = new THREE.Points(geo, mat);
 
   // Tilt: rotate around Z (gives a readable “axis” in screen space).
-  const tiltRad = (s.tiltDeg * Math.PI) / 180;
-  points.rotation.z = tiltRad;
+  if (!isProbe) {
+    const tiltRad = (s.tiltDeg * Math.PI) / 180;
+    points.rotation.z = tiltRad;
+  } else {
+    // Keep probes readable (dish + panels), not “planet spin”.
+    points.rotation.set(0.15, 0, 0.08);
+  }
 
   root.add(points);
   root.rotation.set(0, 0, 0);
@@ -822,36 +1045,49 @@ export function setBodyPreviewTarget(id) {
     // Seed with a couple loops so it doesn't feel empty.
     for (let i = 0; i < 2; i++) spawnSunLoop(targetR);
     for (let i = 0; i < 3; i++) spawnCoronaWisp(targetR);
-    syncSunPreviewLuminosity();
   }
 
   syncBodyPreviewCaption();
 }
 
-/** Sun point-cloud + flare opacity track the left-panel luminosity slider. */
-export function syncSunPreviewLuminosity() {
-  if (!points || currentId !== "sun") return;
-  const mat = points.material;
-  if (!mat || !mat.isPointsMaterial) return;
-  const L = app.sunLuminosity;
-  // Surface stays similar scale; “glow” comes from flare density (rates), not giant points.
-  mat.opacity = 0.5 + L * 0.28;
-  mat.size = 0.0038 * (0.86 + L * 0.22);
-}
-
 export function tickBodyPreview(deltaSimMs) {
-  if (!renderer || !scene || !camera || !points) return;
+  if (!renderer || !scene || !camera) return;
 
   syncBodyPreviewCaption();
 
   const desired = app.trackedBodyId || "sun";
-  if (desired !== currentId) setBodyPreviewTarget(desired);
+  const desiredObj = OBJECTS.find((o) => o.id === desired);
+  const desiredIsProbe = desiredObj?.marker === "probe";
+  if (desiredIsProbe) {
+    setBodyPreviewVisible(false);
+    if (points) {
+      clearSunFx();
+      root?.remove(points);
+      points.geometry.dispose();
+      points.material.dispose();
+      points = null;
+    } else {
+      clearSunFx();
+    }
+    currentId = desired;
+    return;
+  }
+  if (desired !== currentId || !points) setBodyPreviewTarget(desired);
+  if (!points) return;
 
-  const s = getSpin(currentId || "sun");
+  const obj = OBJECTS.find((o) => o.id === currentId);
+  const isProbe = obj?.marker === "probe";
+  const s = getSpin(isProbe ? "moon" : currentId || "sun");
   const periodMs = Math.max(1, s.rotPeriodHours * 3600_000);
   spinAngle += (deltaSimMs * (Math.PI * 2)) / periodMs;
-  points.rotation.y = spinAngle;
-  root.rotation.x = Math.sin(spinAngle * 0.08) * 0.06;
+  if (isProbe) {
+    // Slow, subtle yaw only; no wobble (otherwise it reads like a sphere).
+    points.rotation.y = spinAngle * 0.15;
+    root.rotation.x = 0;
+  } else {
+    points.rotation.y = spinAngle;
+    root.rotation.x = Math.sin(spinAngle * 0.08) * 0.06;
+  }
 
   if (currentId === "sun" && points) {
     const simEnd = app.simTimeMs;

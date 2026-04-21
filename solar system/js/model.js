@@ -10,6 +10,21 @@ import { planetDrawRadius, moonOrbitDistancePx } from "./appearance.js";
  * }} OrbitObject
  */
 
+/** Registry «искус. спутник» — not affected by planet/moon name toggles on the chart. */
+export function isArtificialSatelliteObject(o) {
+  return Boolean(o && o.marker === "probe");
+}
+
+/** Registry rows for искус. спутники — used to force chart names on (2D + 3D). */
+export const ARTIFICIAL_SATELLITE_OBJECT_IDS = /** @type {const} */ (["sic-041132", "sipoc-170333"]);
+
+/** Chart name stays on when planet / moon name toggles are off (2D SVG + 3D CSS2D). */
+export function chartNameIgnoresNameToggles(o) {
+  if (!o) return false;
+  if (o.marker === "probe") return true;
+  return ARTIFICIAL_SATELLITE_OBJECT_IDS.includes(/** @type {(typeof ARTIFICIAL_SATELLITE_OBJECT_IDS)[number]} */ (o.id));
+}
+
 /** @type {OrbitObject[]} */
 export const OBJECTS = [
   { id: "sun", nameKey: "body_sol", L0: 0, periodDays: 1, r: 0, rPxSimple: 0, rPxReal: 0, marker: "sun" },
@@ -142,6 +157,35 @@ export const OBJECTS = [
     nodeDeg: 110.299,
     rPxSimple: 411,
     rPxReal: 0,
+  },
+  // Hidden probes: not in registry, but visible in 2D/3D charts and preview.
+  {
+    id: "sic-041132",
+    nameKey: "probe_sic_041132",
+    L0: 14,
+    periodDays: 365.256363004 * Math.pow(2.12, 1.5),
+    r: 2.12, // between Mars and Ceres (near inner-belt edge)
+    ecc: 0.008,
+    varpiDeg: 120,
+    incDeg: 50,
+    nodeDeg: 38,
+    rPxSimple: 182,
+    rPxReal: 0,
+    marker: "probe",
+  },
+  {
+    id: "sipoc-170333",
+    nameKey: "probe_sipoc_170333",
+    L0: 212,
+    periodDays: 365.256363004 * Math.pow(46, 1.5),
+    r: 46.0, // beyond Kuiper belt ring
+    ecc: 0.004,
+    varpiDeg: 310,
+    incDeg: 80,
+    nodeDeg: 112,
+    rPxSimple: 452,
+    rPxReal: 0,
+    marker: "probe",
   },
 ].map((o, i) => {
   const rPxReal = o.marker === "sun" ? 0 : (o.r / MAX_AU) * R_REAL_MAX;
@@ -462,7 +506,8 @@ export function objectWorldPosition(state, nowMs, objectId) {
 export function objectWorldPosition3d(state, nowMs, objectId) {
   const body = OBJECTS.find((x) => x.id === objectId);
   if (body?.marker === "sun") return { x: 0, y: 0, z: 0 };
-  if (body && !body.marker) {
+  // Planets + hidden probes: Kepler + inclination in 3D.
+  if (body) {
     const s = state.find((p) => p.id === objectId);
     if (!s) return { x: 0, y: 0, z: 0 };
     const rPx = s.rPxActive;

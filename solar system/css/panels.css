@@ -110,49 +110,4 @@
   border-color: rgba(80, 120, 115, 0.35);
 }
 
-.luminance-panel {
-  padding-bottom: 4px;
-}
-
-.luminance-panel__range {
-  display: block;
-  width: 100%;
-  margin: 8px 0 4px;
-  height: 6px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: linear-gradient(90deg, rgba(40, 90, 88, 0.45), rgba(120, 220, 200, 0.35));
-  border: 1px solid var(--line-dim);
-  border-radius: 0;
-  cursor: pointer;
-}
-
-.luminance-panel__range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 14px;
-  background: var(--bright);
-  border: 1px solid rgba(160, 240, 225, 0.55);
-  box-shadow: 0 0 8px rgba(120, 240, 220, 0.35);
-}
-
-.luminance-panel__range::-moz-range-thumb {
-  width: 12px;
-  height: 14px;
-  background: var(--bright);
-  border: 1px solid rgba(160, 240, 225, 0.55);
-  border-radius: 0;
-  box-shadow: 0 0 8px rgba(120, 240, 220, 0.35);
-}
-
-.luminance-panel__caps {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: rgba(140, 200, 190, 0.55);
-  text-transform: uppercase;
-}
 

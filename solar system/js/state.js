@@ -1,9 +1,4 @@
-import { ORBIT_KEY, VIEW3D_KEY, DEFAULT_TIME_RATE_INDEX, SUN_LUMINOSITY_KEY } from "./constants.js";
-
-function readSunLuminosity() {
-  const v = Number(localStorage.getItem(SUN_LUMINOSITY_KEY));
-  return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.42;
-}
+import { ORBIT_KEY, VIEW3D_KEY, DEFAULT_TIME_RATE_INDEX } from "./constants.js";
 
 /** Central mutable UI / simulation state (ES modules: mutate properties, not reassign imports). */
 export const app = {
@@ -22,13 +17,7 @@ export const app = {
     localStorage.getItem(ORBIT_KEY) === "realistic" && localStorage.getItem(VIEW3D_KEY) === "1",
   /** Registry body id to keep centred in the chart (2D or 3D); cleared by clicks outside the viewport frame. */
   trackedBodyId: /** @type {string | null} */ (null),
-  /** 0…1: тускло «как планета» → яркое свечение, заметное с дальних орбит. */
-  sunLuminosity: readSunLuminosity(),
 };
-
-export function persistSunLuminosity() {
-  localStorage.setItem(SUN_LUMINOSITY_KEY, String(app.sunLuminosity));
-}
 
 export function persistOrbitMode() {
   localStorage.setItem(ORBIT_KEY, app.orbitMode);

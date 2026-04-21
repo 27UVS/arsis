@@ -61,6 +61,7 @@
   user-select: none;
 }
 
+
 .viewport__stack #system:active {
   cursor: grabbing;
 }
@@ -115,6 +116,12 @@
   font-size: 11px;
   letter-spacing: 0.08em;
   opacity: 0.92;
+}
+
+/* Artificial satellites — same read size as planets, not tied to .chart3d-label--planet. */
+.chart3d-label--sat {
+  font-size: 14px;
+  letter-spacing: 0.12em;
 }
 
 .orb-toolbar {

@@ -87,24 +87,6 @@
               </button>
             </div>
           </div>
-          <div class="panel__block luminance-panel">
-            <div class="label" data-i18n="sun_luminosity_title">SUN LUMINOSITY</div>
-            <input
-              type="range"
-              id="sun-luminosity"
-              class="luminance-panel__range"
-              min="0"
-              max="100"
-              step="1"
-              value="42"
-              aria-valuemin="0"
-              aria-valuemax="100"
-            />
-            <div class="luminance-panel__caps">
-              <span class="luminance-panel__cap" data-i18n="sun_luminosity_lo">dim</span>
-              <span class="luminance-panel__cap" data-i18n="sun_luminosity_hi">bright</span>
-            </div>
-          </div>
           <div class="scale-panel">
             <div class="label" data-i18n="scale_panel_title">ORBIT SCALE</div>
             <button
@@ -188,14 +170,14 @@
               >
                 <defs>
                   <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur id="sun-glow-blur-wide" stdDeviation="1.2" result="b" />
+                    <feGaussianBlur stdDeviation="1.2" result="b" />
                     <feMerge>
                       <feMergeNode in="b" />
                       <feMergeNode in="SourceGraphic" />
                     </feMerge>
                   </filter>
                   <filter id="glow-tight" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur id="sun-glow-blur-tight" stdDeviation="0.35" result="b" />
+                    <feGaussianBlur stdDeviation="0.35" result="b" />
                     <feMerge>
                       <feMergeNode in="b" />
                       <feMergeNode in="SourceGraphic" />

@@ -8,7 +8,9 @@ import { t } from "./translate.js";
 import { bodyLabel } from "./format.js";
 
 export function registryTypeLabel(kind) {
-  return t(/** @type {"type_star" | "type_planet" | "type_moon" | "type_dwarf"} */ (`type_${kind}`));
+  return t(
+    /** @type {"type_star" | "type_planet" | "type_moon" | "type_dwarf" | "type_sat"} */ (`type_${kind}`),
+  );
 }
 
 export function focusObjectFromRegistry(objectId) {
@@ -31,7 +33,8 @@ export function focusObjectFromRegistry(objectId) {
 }
 
 export function registryRowCount() {
-  return 1 + OBJECTS.filter((o) => !o.marker).length + MOONS.length;
+  // Sun + planets/dwarfs + probes + moons.
+  return 1 + OBJECTS.filter((o) => o.marker !== "sun").length + MOONS.length;
 }
 
 export function fillRegistry(state, nowMs) {
@@ -53,13 +56,13 @@ export function fillRegistry(state, nowMs) {
       const tyEl = li.querySelector(".registry-type");
       if (nameEl) nameEl.textContent = bodyLabel(id);
       if (tyEl && kind)
-        tyEl.textContent = registryTypeLabel(/** @type {"star" | "planet" | "moon" | "dwarf"} */ (kind));
+        tyEl.textContent = registryTypeLabel(/** @type {"star" | "planet" | "moon" | "dwarf" | "sat"} */ (kind));
       if (!degEl) continue;
       if (id === "sun") {
         degEl.textContent = "0.00°";
         continue;
       }
-      if (OBJECTS.some((o) => o.id === id && !o.marker)) {
+      if (OBJECTS.some((o) => o.id === id && (!o.marker || o.marker === "sun"))) {
         const s = state.find((p) => p.id === id);
         degEl.textContent = s ? `${s.L.toFixed(2)}°` : "—";
         continue;
@@ -86,6 +89,7 @@ export function fillRegistry(state, nowMs) {
     sw.style.background = color;
     const name = document.createElement("span");
     name.className = "name";
+    if (kind === "sat") name.classList.add("name--probe");
     name.textContent = bodyLabel(id);
     const ty = document.createElement("span");
     ty.className = "registry-type";
@@ -104,7 +108,7 @@ export function fillRegistry(state, nowMs) {
     if (o.marker === "sun") continue;
     const s = byId(o.id);
     if (!s) continue;
-    const kind = o.id === "pluto" || o.id === "ceres" ? "dwarf" : "planet";
+    const kind = o.marker === "probe" ? "sat" : o.id === "pluto" || o.id === "ceres" ? "dwarf" : "planet";
     appendRow(o.id, kind, s.L, s.color);
   }
 

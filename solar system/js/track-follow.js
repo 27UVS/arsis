@@ -2,7 +2,11 @@ import { app } from "./state.js";
 import { OBJECTS, MOONS, objectWorldPosition } from "./model.js";
 import { applyViewBox } from "./camera-view.js";
 
-const REGISTRY_IDS = new Set([...OBJECTS.map((o) => o.id), ...MOONS.map((m) => m.id)]);
+const REGISTRY_IDS = new Set([
+  ...OBJECTS.filter((o) => !o.marker || o.marker === "sun").map((o) => o.id),
+  ...MOONS.map((m) => m.id),
+]);
+const PICKABLE_IDS = new Set([...OBJECTS.map((o) => o.id), ...MOONS.map((m) => m.id)]);
 
 export function isRegistryBodyId(id) {
   return typeof id === "string" && REGISTRY_IDS.has(id);
@@ -10,7 +14,7 @@ export function isRegistryBodyId(id) {
 
 export function setTrackedBodyId(id) {
   const s = String(id ?? "").trim();
-  app.trackedBodyId = isRegistryBodyId(s) ? s : null;
+  app.trackedBodyId = PICKABLE_IDS.has(s) ? s : null;
 }
 
 export function clearTrackedBody() {
@@ -40,12 +44,12 @@ export function tryPickSvgBodyFromEvent(e) {
   const g = e.target.closest('g[id^="body-"]');
   if (g?.id) {
     const id = g.id.slice("body-".length);
-    return isRegistryBodyId(id) ? id : null;
+    return PICKABLE_IDS.has(id) ? id : null;
   }
   const lbl = e.target.closest('text.chart-label[id^="label-"]');
   if (lbl?.id) {
     const id = lbl.id.slice("label-".length);
-    return isRegistryBodyId(id) ? id : null;
+    return PICKABLE_IDS.has(id) ? id : null;
   }
   return null;
 }

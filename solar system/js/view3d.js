@@ -1,6 +1,5 @@
 import { app, persistView3d } from "./state.js";
 import { OBJECTS, MOON_ALL } from "./model.js";
-import { styleSunSvgLayers } from "./sun-luminosity.js";
 import { applyViewBox, fitWorld } from "./camera-view.js";
 import { t } from "./translate.js";
 import { mountChart3d, unmountChart3d, isChart3dMounted } from "./chart-3d.js";
@@ -53,8 +52,9 @@ export function updateBodySphereAppearance() {
     if (!disk) continue;
     if (o.marker === "sun") {
       if (sun) {
-        const aura = el.querySelector("#sun-aura-bloom");
-        styleSunSvgLayers(disk, aura instanceof SVGCircleElement ? aura : null, sun.color);
+        disk.setAttribute("fill", sun.color);
+        const sr = Number(disk.getAttribute("r")) || 0;
+        disk.setAttribute("filter", app.orbitMode === "realistic" && sr < 56 ? "url(#glow-tight)" : "url(#glow)");
       }
       continue;
     }

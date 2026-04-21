@@ -15,6 +15,12 @@ export function updatePositions(state, nowMs) {
     const te = document.getElementById(`label-${s.id}`);
     if (!g) continue;
     g.setAttribute("transform", `translate(${s.x.toFixed(3)} ${s.y.toFixed(3)})`);
+    if (s.marker === "probe") {
+      // Rotate the triangle so its tip points toward the Sun (origin).
+      const ang = Math.atan2(-s.y, -s.x) * (180 / Math.PI);
+      const p = g.querySelector("path.probe-marker");
+      if (p instanceof SVGPathElement) p.setAttribute("transform", `rotate(${ang.toFixed(2)})`);
+    }
     if (te) {
       te.textContent = bodyLabel(s.id);
       const ox = s.marker === "sun" ? 26 : 12;

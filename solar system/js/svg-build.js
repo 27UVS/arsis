@@ -11,7 +11,6 @@ import { app } from "./state.js";
 import { OBJECTS, MOON_ALL, getRpx, planetOrbitPolylinePx } from "./model.js";
 import { pxFromAuChart, buildBeltLayer } from "./orbits.js";
 import { planetDrawRadius, sunDrawRadius, moonDiskPx } from "./appearance.js";
-import { styleSunSvgLayers } from "./sun-luminosity.js";
 import { t } from "./translate.js";
 import { bodyLabel } from "./format.js";
 import { updateLabelVisibility, syncNameToggleButtons } from "./labels.js";
@@ -150,17 +149,24 @@ export function buildSvg() {
     g.setAttribute("id", `body-${o.id}`);
 
     if (o.marker === "sun") {
-      const sr = sunDrawRadius();
-      const aura = document.createElementNS(NS, "circle");
-      aura.setAttribute("id", "sun-aura-bloom");
-      aura.setAttribute("pointer-events", "none");
-      aura.setAttribute("r", String(sr));
       const sun = document.createElementNS(NS, "circle");
+      const sr = sunDrawRadius();
       sun.setAttribute("class", "body-disk");
       sun.setAttribute("r", String(sr));
-      g.appendChild(aura);
+      sun.setAttribute("fill", o.color);
+      sun.setAttribute("filter", app.orbitMode === "realistic" && sr < 56 ? "url(#glow-tight)" : "url(#glow)");
       g.appendChild(sun);
-      styleSunSvgLayers(sun, aura, o.color);
+    } else if (o.marker === "probe") {
+      // Probe marker: triangle pointing to the Sun (origin).
+      const tri = document.createElementNS(NS, "path");
+      tri.setAttribute("class", "probe-marker");
+      tri.setAttribute("fill", "rgba(210, 255, 248, 0.9)");
+      tri.setAttribute("stroke", "rgba(0, 24, 26, 0.55)");
+      tri.setAttribute("stroke-width", "0.9");
+      tri.setAttribute("vector-effect", "non-scaling-stroke");
+      // Base shape: points towards -X in local coords; will be rotated in `updatePositions`.
+      tri.setAttribute("d", "M 0 -3.6 L 10 0 L 0 3.6 Z");
+      g.appendChild(tri);
     } else {
       const rp = getRpx(o);
       const pr = planetDrawRadius(o.id, rp);
@@ -190,6 +196,7 @@ export function buildSvg() {
 
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.setAttribute("id", `label-${o.id}`);
+    if (o.marker === "probe") text.setAttribute("data-chart-name-always", "1");
     text.setAttribute("class", "chart-label");
     text.setAttribute("data-svg-fs", "10");
     text.setAttribute("data-screen-px", String(LABEL_SCREEN_PX_PLANET));

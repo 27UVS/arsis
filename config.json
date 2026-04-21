@@ -1,8 +1,8 @@
 {
   "glitchFx": true,
-  "authEnabled": true,
+  "authEnabled": false,
   "auth": {
-    "username": "uvs",
-    "password": "terra1234"
+    "username": "agens",
+    "store": "._etc/.init.d/.passwd.d/.u/agens.json"
   }
 }

@@ -22,7 +22,7 @@ import {
 import { planetDrawRadius, sunDrawRadius, moonDiskPx, moonOrbitDistancePx } from "./appearance.js";
 import { maxOrbitRadius, pxFromAuChart } from "./orbits.js";
 import { bodyLabel } from "./format.js";
-import { setTrackedBodyId, isRegistryBodyId } from "./track-follow.js";
+import { setTrackedBodyId } from "./track-follow.js";
 
 /** @type {THREE.WebGLRenderer | null} */
 let renderer = null;
@@ -41,6 +41,8 @@ let stackEl = null;
 
 /** @type {Map<string, THREE.Mesh>} */
 const planetMeshes = new Map();
+/** @type {Map<string, THREE.Mesh>} */
+const probeMeshes = new Map();
 /** @type {THREE.Mesh | null} */
 let sunMesh = null;
 /** @type {THREE.PointLight | null} */
@@ -53,8 +55,12 @@ const _moonMat = new THREE.Matrix4();
 const _scale = new THREE.Vector3();
 const _composePos = new THREE.Vector3();
 const _composeQuat = new THREE.Quaternion();
+/** NDC scratch for artificial-satellite CSS2D repaint (Three CSS2DRenderer clip test is not enough for our labels). */
+const _probeLabelNdc = new THREE.Vector3();
 /** @type {Map<string, CSS2DObject>} */
 const planetLabels = new Map();
+/** @type {Map<string, CSS2DObject>} */
+const probeLabels = new Map();
 /** @type {Map<string, CSS2DObject>} */
 const moonLabels = new Map();
 /** @type {THREE.Points | null} */
@@ -88,24 +94,20 @@ function makeBodyMaterial(cssColor, opts = {}) {
 }
 
 export function syncChart3dSunLuminosity() {
+  // Luminosity control removed: keep Sun permanently bright.
+  if (!sunMesh) return;
   const sun = OBJECTS.find((o) => o.marker === "sun");
   if (!sun) return;
-  const L = app.sunLuminosity;
   const c = new THREE.Color(sun.color);
-
-  if (sunMesh) {
-    const mat = sunMesh.material;
-    if (mat && mat.isMeshStandardMaterial) {
-      mat.color.copy(c);
-      mat.emissive.copy(c);
-      // Keep disk hue; “brightness” is mostly the point light on other bodies + mild emissive.
-      mat.emissiveIntensity = 0.05 + L * 0.22;
-    }
+  const mat = sunMesh.material;
+  if (mat && mat.isMeshStandardMaterial) {
+    mat.color.copy(c);
+    mat.emissive.copy(c);
+    mat.emissiveIntensity = 0.38;
   }
-
   if (sunPointLight) {
     sunPointLight.color.copy(c);
-    sunPointLight.intensity = L * L * 24;
+    sunPointLight.intensity = 0;
   }
 }
 
@@ -113,6 +115,8 @@ export function syncChart3dSunLuminosity() {
 function chart3dY(yChart) {
   return -yChart;
 }
+
+// (Sun rays removed)
 
 function pushBeltRing(positions, count, rng, auMin, auMax) {
   for (let i = 0; i < count; i += 1) {
@@ -275,6 +279,51 @@ export function mountChart3d() {
       syncChart3dSunLuminosity();
       continue;
     }
+    if (o.marker === "probe") {
+      const rPx = getRpx(o);
+      const pr = planetDrawRadius("mercury", rPx) * 0.9;
+      const geom = new THREE.ConeGeometry(pr * 0.75, pr * 2.2, 4, 1);
+      geom.rotateX(-Math.PI / 2); // point along -Z so `lookAt(0,0,0)` aims the tip at the Sun
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xd2fff8,
+        transparent: true,
+        opacity: 0.95,
+        depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.userData.id = o.id;
+      scene.add(mesh);
+      probeMeshes.set(o.id, mesh);
+
+      // Orbit line for probes (same as planets).
+      const lineGeom = new THREE.BufferGeometry();
+      const rOrbit = getRpx(o);
+      const flat3 =
+        app.orbitMode === "realistic" ? planetOrbitPolyline3d(o, rOrbit, 256) : planetOrbitPolyline3d(o, rOrbit, 256);
+      const arr = new Float32Array(flat3.length);
+      for (let i = 0; i < flat3.length; i += 3) {
+        arr[i] = flat3[i];
+        arr[i + 1] = chart3dY(flat3[i + 1]);
+        arr[i + 2] = flat3[i + 2];
+      }
+      lineGeom.setAttribute("position", new THREE.BufferAttribute(arr, 3));
+      const probeOrbitMat = orbitLineMat.clone();
+      probeOrbitMat.opacity = 0.14;
+      const orbitLoop = new THREE.LineLoop(lineGeom, probeOrbitMat);
+      scene.add(orbitLoop);
+
+      const div = document.createElement("div");
+      div.className = "chart3d-label chart3d-label--sat";
+      div.textContent = bodyLabel(o.id);
+      const lbl = new CSS2DObject(div);
+      const state0 = meanLongitudeRad(app.simTimeMs);
+      const pw = objectWorldPosition3d(state0, app.simTimeMs, o.id);
+      const lift = pr * 1.25 + 8;
+      lbl.position.set(pw.x, chart3dY(pw.y) + lift, pw.z);
+      scene.add(lbl);
+      probeLabels.set(o.id, lbl);
+      continue;
+    }
     const rPx = getRpx(o);
     const pr = planetDrawRadius(o.id, rPx);
     const mat = makeBodyMaterial(o.color);
@@ -380,26 +429,23 @@ export function mountChart3d() {
     const pickList = /** @type {THREE.Object3D[]} */ ([]);
     if (sunMesh) pickList.push(sunMesh);
     for (const m of planetMeshes.values()) pickList.push(m);
+    for (const m of probeMeshes.values()) pickList.push(m);
     if (moonInstanced) pickList.push(moonInstanced);
     const hits = _pickRay.intersectObjects(pickList, true);
     for (const h of hits) {
       if (h.object === moonInstanced && h.instanceId != null) {
         const mid = MOON_ALL[/** @type {number} */ (h.instanceId)]?.id;
-        if (isRegistryBodyId(mid)) {
-          setTrackedBodyId(mid);
-          e.stopPropagation();
-          return;
-        }
+        setTrackedBodyId(mid);
+        e.stopPropagation();
+        return;
         continue;
       }
       let obj = /** @type {THREE.Object3D | null} */ (h.object);
       while (obj && !obj.userData?.id) obj = obj.parent;
       const bid = obj?.userData?.id;
-      if (isRegistryBodyId(bid)) {
-        setTrackedBodyId(bid);
-        e.stopPropagation();
-        return;
-      }
+      setTrackedBodyId(bid);
+      e.stopPropagation();
+      return;
     }
   };
   canvas.addEventListener("pointerdown", _webglPickHandler, true);
@@ -482,6 +528,21 @@ export function syncChart3dFromSim(state, nowMs) {
       if (sunMesh) sunMesh.position.set(0, 0, 0);
       continue;
     }
+    if (s.marker === "probe") {
+      const mesh = probeMeshes.get(s.id);
+      if (!mesh) continue;
+      const p = objectWorldPosition3d(state, nowMs, s.id);
+      mesh.position.set(p.x, chart3dY(p.y), p.z);
+      // Probes point away from the Sun (outward radial).
+      mesh.lookAt(mesh.position.x * 2, mesh.position.y * 2, mesh.position.z * 2);
+      const lbl = probeLabels.get(s.id);
+      if (lbl) {
+        const pr = planetDrawRadius("mercury", s.rPxActive) * 0.9;
+        const lift = pr * 1.25 + 8;
+        lbl.position.set(p.x, chart3dY(p.y) + lift, p.z);
+      }
+      continue;
+    }
     const mesh = planetMeshes.get(s.id);
     if (!mesh) continue;
     const p = objectWorldPosition3d(state, nowMs, s.id);
@@ -516,7 +577,7 @@ export function syncChart3dFromSim(state, nowMs) {
   moonInstanced.instanceMatrix.needsUpdate = true;
 
   const tid = app.trackedBodyId;
-  if (tid && controls && camera && isRegistryBodyId(tid)) {
+  if (tid && controls && camera) {
     const prevT = controls.target.clone();
     const p = objectWorldPosition3d(state, nowMs, tid);
     controls.target.set(p.x, chart3dY(p.y), p.z);
@@ -530,9 +591,50 @@ export function refreshChart3dLabels() {
   for (const [, lbl] of planetLabels) {
     lbl.visible = sp;
   }
+  for (const [, lbl] of probeLabels) {
+    lbl.visible = true;
+  }
   const sm = moonNamesOn();
   for (const [, lbl] of moonLabels) {
     lbl.visible = sm;
+  }
+}
+
+/**
+ * Three.js CSS2DRenderer sets `element.style.display` every frame from its own clip test,
+ * ignoring our `visible` flag once it decides "hidden". Re-apply DOM for artificial satellites only.
+ */
+function repaintArtificialSatelliteCss2dLabels() {
+  if (!camera || !labelRenderer) return;
+  const w = labelRenderer.domElement.clientWidth;
+  const h = labelRenderer.domElement.clientHeight;
+  const wh = w / 2;
+  const hh = h / 2;
+  if (w < 2 || h < 2) return;
+
+  for (const [, lbl] of probeLabels) {
+    const el = lbl.element;
+    if (!lbl.visible) {
+      el.style.display = "none";
+      continue;
+    }
+    _probeLabelNdc.setFromMatrixPosition(lbl.matrixWorld);
+    _probeLabelNdc.project(camera);
+    const m = 0.12;
+    if (
+      _probeLabelNdc.z < -1 - m ||
+      _probeLabelNdc.z > 1 + m ||
+      Math.abs(_probeLabelNdc.x) > 1 + m ||
+      Math.abs(_probeLabelNdc.y) > 1 + m
+    ) {
+      el.style.display = "none";
+      continue;
+    }
+    const x = _probeLabelNdc.x * wh + wh;
+    const y = -_probeLabelNdc.y * hh + hh;
+    el.style.display = "";
+    el.style.transform = `translate(-50%,-50%) translate(${x}px,${y}px)`;
+    el.style.zIndex = "100000";
   }
 }
 
@@ -554,6 +656,7 @@ function renderFrame() {
   controls.update();
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
+  repaintArtificialSatelliteCss2dLabels();
 }
 
 export function startRenderLoop() {
@@ -589,6 +692,8 @@ export function unmountChart3d() {
   scene = null;
   planetMeshes.clear();
   planetLabels.clear();
+  probeMeshes.clear();
+  probeLabels.clear();
   moonLabels.clear();
   sunMesh = null;
   sunPointLight = null;
